@@ -1,0 +1,176 @@
+{
+  "status": "partial",
+  "run_state": "stopped",
+  "run_id": "pilot-20261123T191916743546Z",
+  "seq_len": 32768,
+  "completed_optimizer_steps": 9,
+  "latest_saved_step": 8,
+  "target_optimizer_steps": 32,
+  "revisions": {
+    "model_revision": "37561816e66b5b9153b1b64c10968c18c1e6f4a0",
+    "dataset_revision": "45f1e98e317d3639437f0eb02f4e8bc5825732f3"
+  },
+  "seed": 42,
+  "group_policy": "one trajectory per normalized task prompt, excluding terminal state",
+  "baseline_validation": {
+    "loss": 1.0778269171714783,
+    "examples": 16,
+    "aggregation": "mean per-example assistant-token cross entropy",
+    "per_example_losses": [
+      1.103537917137146,
+      1.0681135654449463,
+      1.199849009513855,
+      1.134352445602417,
+      1.1351337432861328,
+      1.0774040222167969,
+      1.1370742321014404,
+      0.9609376192092896,
+      0.9185526371002197,
+      1.025808572769165,
+      1.0605714321136475,
+      0.9957873225212097,
+      1.0825862884521484,
+      0.9445306658744812,
+      1.146456241607666,
+      1.2545349597930908
+    ]
+  },
+  "latest_validation": {
+    "step": 8,
+    "eval_loss": 1.0243744850158691,
+    "eval_runtime": 154.2036,
+    "eval_samples_per_second": 0.104,
+    "eval_steps_per_second": 0.104,
+    "epoch": 0.25
+  },
+  "relative_validation_loss_improvement": 0.04959277904831268,
+  "five_percent_threshold_met": false,
+  "final_verification_completed": false,
+  "capacity_probe": {
+    "status": "passed",
+    "seq_len": 32768,
+    "example_tokens": 32759,
+    "microsteps": 2,
+    "optimizer_steps": 1,
+    "grad_norm": 0.23845639824867249,
+    "losses": [
+      1.0055252313613892,
+      1.0055252313613892
+    ],
+    "step_seconds": 213.73921385599533,
+    "mean_forward_seconds": 11.509290312009398,
+    "estimated_training_seconds": 6839.654843391851,
+    "estimated_validation_seconds": 920.7432249607518,
+    "estimate_excludes_generation": true,
+    "peak_gpu_allocated_bytes": 192311584256,
+    "peak_gpu_reserved_bytes": 212036747264,
+    "trainable_parameters": 58363904
+  },
+  "logs": [
+    {
+      "step": 1,
+      "loss": 1.1112115383148193,
+      "grad_norm": 0.2396564483642578,
+      "learning_rate": 0.0001,
+      "epoch": 0.03125
+    },
+    {
+      "step": 2,
+      "loss": 0.9012969136238098,
+      "grad_norm": 0.18449288606643677,
+      "learning_rate": 0.0001,
+      "epoch": 0.0625
+    },
+    {
+      "step": 3,
+      "loss": 1.1477744579315186,
+      "grad_norm": 0.147504061460495,
+      "learning_rate": 0.0001,
+      "epoch": 0.09375
+    },
+    {
+      "step": 4,
+      "loss": 1.2015434503555298,
+      "grad_norm": 0.14651113748550415,
+      "learning_rate": 0.0001,
+      "epoch": 0.125
+    },
+    {
+      "step": 5,
+      "loss": 1.1638470888137817,
+      "grad_norm": 0.2619631290435791,
+      "learning_rate": 0.0001,
+      "epoch": 0.15625
+    },
+    {
+      "step": 6,
+      "loss": 1.025933861732483,
+      "grad_norm": 0.22840595245361328,
+      "learning_rate": 0.0001,
+      "epoch": 0.1875
+    },
+    {
+      "step": 7,
+      "loss": 1.050112247467041,
+      "grad_norm": 0.17958739399909973,
+      "learning_rate": 0.0001,
+      "epoch": 0.21875
+    },
+    {
+      "step": 8,
+      "loss": 0.9630252718925476,
+      "grad_norm": 0.11856497824192047,
+      "learning_rate": 0.0001,
+      "epoch": 0.25
+    },
+    {
+      "step": 9,
+      "loss": 0.9630155563354492,
+      "grad_norm": 0.14115101099014282,
+      "learning_rate": 0.0001,
+      "epoch": 0.28125
+    }
+  ],
+  "evaluations": [
+    {
+      "step": 8,
+      "eval_loss": 1.0243744850158691,
+      "eval_runtime": 154.2036,
+      "eval_samples_per_second": 0.104,
+      "eval_steps_per_second": 0.104,
+      "epoch": 0.25
+    }
+  ],
+  "config": {
+    "model_name_or_path": "Qwen/Qwen3.8-27B",
+    "template": "qwen3_8",
+    "lora_rank": 8,
+    "lora_alpha": 16,
+    "lora_dropout": 0.0,
+    "learning_rate": 0.0001,
+    "lr_scheduler_type": "constant",
+    "bf16": true,
+    "gradient_checkpointing": true,
+    "gradient_accumulation_steps": 2,
+    "per_device_train_batch_size": 1,
+    "save_steps": 8,
+    "eval_steps": 8,
+    "packing": false
+  },
+  "data": {
+    "train": {
+      "examples": 64,
+      "min_tokens": 20517,
+      "max_tokens": 32759,
+      "min_messages": 12,
+      "max_messages": 44
+    },
+    "validation": {
+      "examples": 16,
+      "min_tokens": 24575,
+      "max_tokens": 32241,
+      "min_messages": 10,
+      "max_messages": 32
+    }
+  }
+}

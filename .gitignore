@@ -1,0 +1,30 @@
+# Python and tool caches
+__pycache__/
+*.py[cod]
+.ruff_cache/
+.pytest_cache/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+# Training data and large runtime artifacts stay in scratch
+cache/
+data/
+runs/
+adapters/
+checkpoints/
+LLaMA-Factory/
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.arrow
+*.parquet
+*.log
+*.log.*
+*.jsonl
+# Editor / operating system files
+.DS_Store
+.vscode/
+.idea/

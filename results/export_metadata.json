@@ -1,0 +1,4 @@
+{
+  "exported_at": "2026-11-23T20:12:08.646843+00:00",
+  "description": "Allowlisted metrics exported from local run artifacts; no prompts, responses, weights, or absolute paths."
+}
