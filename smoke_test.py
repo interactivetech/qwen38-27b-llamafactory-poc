@@ -563,13 +563,18 @@ def all_commands(args):
 
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "quality":
+        from quality_test import main as quality_main
+
+        return quality_main(sys.argv[2:])
     if len(sys.argv) > 1 and sys.argv[1] == "pilot":
         from pilot_test import main as pilot_main
 
         return pilot_main(sys.argv[2:])
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "command", choices=["preflight", "prepare", "train", "verify", "all", "pilot"]
+        "command",
+        choices=["preflight", "prepare", "train", "verify", "all", "pilot", "quality"],
     )
     parser.add_argument(
         "--root", type=Path, default=Path(os.environ.get("SMOKE_ROOT", DEFAULT_ROOT))

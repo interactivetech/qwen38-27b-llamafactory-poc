@@ -1,0 +1,285 @@
+{
+  "status": "completed",
+  "config": {
+    "max_new_tokens": 2048,
+    "decoding": "greedy",
+    "template": "qwen3_8",
+    "reasoning_effort": "xhigh",
+    "revisions": {
+      "model_revision": "37561816e66b5b9153b1b64c10968c18c1e6f4a0",
+      "dataset_revision": "45f1e98e317d3639437f0eb02f4e8bc5825732f3"
+    },
+    "seed": 42,
+    "heldout_cases": 4,
+    "diagnostic_cases": 4,
+    "commands_executed": false,
+    "note": "Same saved held-out input tokens for base and adapter; output budget does not truncate the input."
+  },
+  "commands_executed": false,
+  "scope": "Four previously selected held-out contexts plus four exact-action instruction/format probes; not an executable task-success benchmark.",
+  "models": {
+    "base": {
+      "heldout": {
+        "cases": 4,
+        "json_valid": 1,
+        "schema_valid": 1,
+        "token_cap_reached": 3,
+        "completed_generation": 1,
+        "generated_tokens": [
+          226,
+          2048,
+          2048,
+          2048
+        ]
+      },
+      "diagnostic": {
+        "cases": 4,
+        "json_valid": 4,
+        "schema_valid": 4,
+        "token_cap_reached": 0,
+        "completed_generation": 4,
+        "generated_tokens": [
+          273,
+          240,
+          602,
+          223
+        ],
+        "exact_action_pass": 4
+      }
+    },
+    "adapter": {
+      "heldout": {
+        "cases": 4,
+        "json_valid": 4,
+        "schema_valid": 4,
+        "token_cap_reached": 0,
+        "completed_generation": 4,
+        "generated_tokens": [
+          372,
+          1202,
+          1635,
+          1699
+        ]
+      },
+      "diagnostic": {
+        "cases": 4,
+        "json_valid": 4,
+        "schema_valid": 4,
+        "token_cap_reached": 0,
+        "completed_generation": 4,
+        "generated_tokens": [
+          274,
+          259,
+          290,
+          236
+        ],
+        "exact_action_pass": 4
+      }
+    }
+  },
+  "heldout_reference_lengths": [
+    {
+      "case_id": "heldout_1",
+      "tokens": 494
+    },
+    {
+      "case_id": "heldout_2",
+      "tokens": 1057
+    },
+    {
+      "case_id": "heldout_3",
+      "tokens": 2891
+    },
+    {
+      "case_id": "heldout_4",
+      "tokens": 6576
+    }
+  ],
+  "budget_caveat": "Some held-out references exceed the generation budget. A capped response is not usable under this budget, but is not proof of incorrect reasoning or task failure.",
+  "cases": [
+    {
+      "case_id": "heldout_1",
+      "kind": "heldout",
+      "prompt_sha256": "91211f778820d6be3576e45e5467a2cede9e1e885e38505fd3b6adf855ade0d3",
+      "input_tokens": 30949,
+      "base": {
+        "generated_tokens": 226,
+        "json_valid": true,
+        "schema_valid": true,
+        "token_cap_reached": false,
+        "stopped_on_eos": true,
+        "reasoning_closed": true
+      },
+      "adapter": {
+        "generated_tokens": 372,
+        "json_valid": true,
+        "schema_valid": true,
+        "token_cap_reached": false,
+        "stopped_on_eos": true,
+        "reasoning_closed": true
+      }
+    },
+    {
+      "case_id": "heldout_2",
+      "kind": "heldout",
+      "prompt_sha256": "f33a0740df3167d76f841f096d853b4e9fc600b9793f6d94073749255a86d64f",
+      "input_tokens": 30795,
+      "base": {
+        "generated_tokens": 2048,
+        "json_valid": false,
+        "schema_valid": false,
+        "token_cap_reached": true,
+        "stopped_on_eos": false,
+        "reasoning_closed": false
+      },
+      "adapter": {
+        "generated_tokens": 1202,
+        "json_valid": true,
+        "schema_valid": true,
+        "token_cap_reached": false,
+        "stopped_on_eos": true,
+        "reasoning_closed": true
+      }
+    },
+    {
+      "case_id": "heldout_3",
+      "kind": "heldout",
+      "prompt_sha256": "8f1c66ca881a972b1802469a9a000728f2af4d2abe062f952fd4197bca5330b3",
+      "input_tokens": 27228,
+      "base": {
+        "generated_tokens": 2048,
+        "json_valid": false,
+        "schema_valid": false,
+        "token_cap_reached": true,
+        "stopped_on_eos": false,
+        "reasoning_closed": false
+      },
+      "adapter": {
+        "generated_tokens": 1635,
+        "json_valid": true,
+        "schema_valid": true,
+        "token_cap_reached": false,
+        "stopped_on_eos": true,
+        "reasoning_closed": true
+      }
+    },
+    {
+      "case_id": "heldout_4",
+      "kind": "heldout",
+      "prompt_sha256": "e3b7ee6329a3f6f03d22456262119fcd0b90c28b6113e27787695bfa3b161676",
+      "input_tokens": 24365,
+      "base": {
+        "generated_tokens": 2048,
+        "json_valid": false,
+        "schema_valid": false,
+        "token_cap_reached": true,
+        "stopped_on_eos": false,
+        "reasoning_closed": false
+      },
+      "adapter": {
+        "generated_tokens": 1699,
+        "json_valid": true,
+        "schema_valid": true,
+        "token_cap_reached": false,
+        "stopped_on_eos": true,
+        "reasoning_closed": true
+      }
+    },
+    {
+      "case_id": "inspect_file",
+      "kind": "diagnostic",
+      "prompt_sha256": "cccaa229f307d5e726f5e2f09dcf3f91e2ca3a30b99c9b67578b1c313416647f",
+      "input_tokens": 228,
+      "base": {
+        "generated_tokens": 273,
+        "json_valid": true,
+        "schema_valid": true,
+        "token_cap_reached": false,
+        "stopped_on_eos": true,
+        "reasoning_closed": true,
+        "diagnostic_pass": true
+      },
+      "adapter": {
+        "generated_tokens": 274,
+        "json_valid": true,
+        "schema_valid": true,
+        "token_cap_reached": false,
+        "stopped_on_eos": true,
+        "reasoning_closed": true,
+        "diagnostic_pass": true
+      }
+    },
+    {
+      "case_id": "wait_for_running_test",
+      "kind": "diagnostic",
+      "prompt_sha256": "5374f742a8062a94e9a5fca9667c5716fe3abf476b5b7f890f4c1fc8dc36ee96",
+      "input_tokens": 221,
+      "base": {
+        "generated_tokens": 240,
+        "json_valid": true,
+        "schema_valid": true,
+        "token_cap_reached": false,
+        "stopped_on_eos": true,
+        "reasoning_closed": true,
+        "diagnostic_pass": true
+      },
+      "adapter": {
+        "generated_tokens": 259,
+        "json_valid": true,
+        "schema_valid": true,
+        "token_cap_reached": false,
+        "stopped_on_eos": true,
+        "reasoning_closed": true,
+        "diagnostic_pass": true
+      }
+    },
+    {
+      "case_id": "permission_denied",
+      "kind": "diagnostic",
+      "prompt_sha256": "4128ca93df825433101a8a1e46ebe8e6ae7b6d2f47845530140d928d7578d4fa",
+      "input_tokens": 222,
+      "base": {
+        "generated_tokens": 602,
+        "json_valid": true,
+        "schema_valid": true,
+        "token_cap_reached": false,
+        "stopped_on_eos": true,
+        "reasoning_closed": true,
+        "diagnostic_pass": true
+      },
+      "adapter": {
+        "generated_tokens": 290,
+        "json_valid": true,
+        "schema_valid": true,
+        "token_cap_reached": false,
+        "stopped_on_eos": true,
+        "reasoning_closed": true,
+        "diagnostic_pass": true
+      }
+    },
+    {
+      "case_id": "confirmed_completion",
+      "kind": "diagnostic",
+      "prompt_sha256": "c5b86d971d050c7e368d8b3f56fedde131adbd180ab49cd64657dcf6491a2bcd",
+      "input_tokens": 229,
+      "base": {
+        "generated_tokens": 223,
+        "json_valid": true,
+        "schema_valid": true,
+        "token_cap_reached": false,
+        "stopped_on_eos": true,
+        "reasoning_closed": true,
+        "diagnostic_pass": true
+      },
+      "adapter": {
+        "generated_tokens": 236,
+        "json_valid": true,
+        "schema_valid": true,
+        "token_cap_reached": false,
+        "stopped_on_eos": true,
+        "reasoning_closed": true,
+        "diagnostic_pass": true
+      }
+    }
+  ]
+}

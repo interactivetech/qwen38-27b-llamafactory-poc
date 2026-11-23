@@ -2,7 +2,7 @@
 
 A reproducible, single-GPU [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory) workflow for fine-tuning [Qwen/Qwen3.8-27B](https://huggingface.co/Qwen/Qwen3.8-27B) on text trajectories from [TerminalHorizon-3K](https://huggingface.co/datasets/shunzou05/TerminalHorizon-3K).
 
-**Measured on one NVIDIA B300:** the 2K smoke test passed training, adapter saving, and fresh-process reload. A 32K forward/backward/optimizer capacity probe also passed. The 32K learning pilot completed **32 optimizer steps / one epoch** and passed fresh-process adapter verification. Reloaded held-out loss decreased by **7.56%**. Generated-output quality still needs a longer-budget or task-level evaluation.
+**Measured on one NVIDIA B300:** the 2K smoke test passed training, adapter saving, and fresh-process reload. A 32K forward/backward/optimizer capacity probe also passed. The 32K learning pilot completed **32 optimizer steps / one epoch** and passed fresh-process adapter verification. Reloaded held-out loss decreased by **7.56%**. A follow-up output screen produced complete structured responses on **4/4** contexts for the adapter versus **1/4** for the base; actual task success remains unmeasured.
 
 ## Results
 
@@ -57,9 +57,32 @@ The held-out curve improved throughout the run:
 | 32 | 0.996254 |
 | 32, fresh-process reload | 0.996313 |
 
-**Generation limitation:** all four adapter samples reached the 256-new-token cap; three had not closed their reasoning block. The generation check passed operationally, but these capped samples cannot establish command correctness or task completion. A longer generation budget and isolated task evaluation are needed to assess that.
+**Initial generation check:** all four adapter samples reached the 256-new-token cap; three had not closed their reasoning block. The generation check passed operationally, but these capped samples cannot establish command correctness or task completion. The follow-up 2,048-token screen below assesses response completion; task execution remains untested.
 
 See [pilot evidence](results/pilot_32k.json), [training and validation curves](results/training_curves.csv), and [hardware/runtime versions](results/environment.json). Capacity-probe memory is measured separately from the subsequent training run. Allocated and reserved memory are distinct measurements; reserved memory includes the allocator cache.
+
+## Output-quality screen
+
+A separate paired comparison used the same four validation contexts, greedy decoding, `xhigh` reasoning effort, and **2,048 new tokens per response**. It also included four short exact-action instruction/format probes. Generated commands were never executed.
+
+| Check | Base | Trained adapter |
+| --- | --- | --- |
+| Complete, schema-valid responses on real contexts | **1/4** | **4/4** |
+| Real-context responses reaching the token cap | 3/4 | 0/4 |
+| Exact-action instruction probes passed | 4/4 | 4/4 |
+
+The adapter produced concrete next actions for all four contexts; the base model spent its budget reasoning without final JSON in three. Static inspection found plausible source-inspection and measurement steps, but also an unverified gateway request-payload assumption. Two reference responses themselves exceed 2,048 tokens, so capped outputs are budget-limited evidence, not proof of task failure.
+
+This is a small usability screen, **not a task-success score or a general model-quality ranking**. The exact-action probes provide the desired action and therefore measure instruction following rather than independent problem solving. See the [case-level metrics](results/quality_comparison.json) and [context-based review and limitations](results/quality_review.md).
+
+To reproduce against your completed 32K pilot:
+
+```bash
+export PILOT_RUN="$SMOKE_ROOT/runs/pilot-<your-completed-run-id>"
+./setup.sh --run quality --pilot-run "$PILOT_RUN" --max-new-tokens 2048
+```
+
+A new directory under `$PILOT_RUN/quality/` contains the paired responses, prompt hashes, stage logs, summary, and a local `comparison.md` with complete responses and the reference next turns. The reference responses are never supplied to the model.
 
 ## Reproduce
 
@@ -124,14 +147,15 @@ The pinned Factory checkpointing wrapper does not accept the new default `every_
 - [`setup.sh`](setup.sh): scratch environment, dependency lock, and CUDA checks.
 - [`smoke_test.py`](smoke_test.py), [`smoke_lora.yaml`](smoke_lora.yaml): smoke workflow and shared training defaults.
 - [`pilot_test.py`](pilot_test.py): split preparation, capacity probe, baseline, training, resume, and verification.
-- [`test_pilot.py`](test_pilot.py): CPU tests for task identity, intact prefixes, OOM fallback, and checkpoint resume orchestration. These do not run GPU training.
+- [`quality_test.py`](quality_test.py): bounded paired output comparison and mechanical checks; no generated command execution.
+- [`test_pilot.py`](test_pilot.py) and [`test_quality.py`](test_quality.py): CPU tests for workflow/resume behavior, response parsing, and exact-action oracles. These do not run GPU training.
 - [`PILOT.md`](PILOT.md) and [`PLAN.md`](PLAN.md): detailed workflow and original experiment history. Original machine paths in the historical notes are examples; set `SMOKE_ROOT` for your system.
 
 Run the CPU tests using the installed environment:
 
 ```bash
 TMPDIR="$SMOKE_ROOT/tmp" PYTHONPYCACHEPREFIX="$SMOKE_ROOT/cache/pycache" \
-  "$SMOKE_ROOT/venv/bin/python" -m unittest -v test_pilot
+  "$SMOKE_ROOT/venv/bin/python" -m unittest -v test_pilot test_quality
 ```
 
 After continuing training, refresh the committed evidence from your actual run artifacts:
