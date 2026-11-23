@@ -106,6 +106,12 @@ def export(root, pilot_run, output):
             if latest
             else None
         )
+        if final:
+            # The final comparison uses fresh-process validation, which may
+            # differ slightly from the trainer's final evaluation.
+            improvement = (
+                baseline["loss"] - final["final_validation"]["loss"]
+            ) / baseline["loss"]
         saved = [
             int(p.name.split("-")[-1])
             for p in (context / "adapter").glob("checkpoint-*")
@@ -168,6 +174,31 @@ def export(root, pilot_run, output):
                 max_messages=max(r["messages"] for r in records),
             )
         if final:
+            result["training_success"] = final["training_success"]
+            result["learning_signal"] = final["learning_signal"]
+            result["final_validation"] = select(
+                final["final_validation"],
+                ("loss", "examples", "aggregation", "per_example_losses"),
+            )
+            result["total_elapsed_seconds"] = final.get("total_elapsed_seconds")
+            result["verification"] = select(
+                final["verification"], ("fresh_process", "unmerged_adapter", "template")
+            )
+            result["generation_statistics"] = {}
+            for name, generations in (
+                ("base", baseline["generations"]),
+                ("adapter", final["verification"]["generations"]),
+            ):
+                result["generation_statistics"][name] = dict(
+                    examples=len(generations),
+                    generated_token_counts=[r["generated_tokens"] for r in generations],
+                    reached_256_token_cap=sum(
+                        r["generated_tokens"] == 256 for r in generations
+                    ),
+                    closed_reasoning_blocks=sum(
+                        "</think>" in r["response"] for r in generations
+                    ),
+                )
             result["final_training_metrics"] = select(
                 final,
                 (

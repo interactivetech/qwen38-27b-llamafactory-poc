@@ -32,7 +32,7 @@ Implementation run: `/scratch1/mendeza/qwen38-27b-llamafactory-test/runs/pilot-2
 
 Training was stopped at the user's request after step 9. Checkpoint 8 was saved at that stop; its held-out loss was **1.024374**, compared with **1.077827** for the base model (a **4.96%** reduction). The 32K probe passed with **179.1 GiB** peak allocated memory; no context fallback was needed.
 
-Resume that run from another terminal and automatically verify the final adapter:
+The following command was used to resume that run and automatically verify the final adapter (the run is now complete; do not restart it):
 
 ```bash
 cd /nfshomes/mendeza/2026_projects/2026_openagents_sft_test/qwen38-27b-llamafactory-test
@@ -44,4 +44,6 @@ tail -f "$PILOT_RUN/resume.log"
 
 `resume` selects the latest complete checkpoint in the selected context directory. It validates the saved step budget, restores historical training/evaluation metrics, and runs only training and final verification. Data preparation, the capacity probe, and baseline evaluation are reused. An optional `--resume-from-checkpoint` selects a checkpoint explicitly. This continuation stops and records errors; it does not automatically start a new fallback run. Pressing Ctrl-C while following the log stops the log viewer; the `nohup` job continues. The final report will be written to `$PILOT_RUN/summary.json`.
 
-The pilot subsequently resumed from checkpoint 8. At the step-16 evaluation, validation loss was **1.008066**, a **6.47%** reduction from the base-model baseline; checkpoint 16 was saved. This exceeds the 5% learning-signal threshold at an intermediate checkpoint. Training is still in progress, and final verification has not yet run. The committed result snapshots and README reflect this update.
+The pilot subsequently resumed from checkpoint 8. At the step-16 evaluation, validation loss was **1.008066**, a **6.47%** reduction from the base-model baseline; checkpoint 16 was saved. This exceeds the 5% learning-signal threshold at an intermediate checkpoint. This was an intermediate measurement; the final result below supersedes that status.
+
+The pilot completed 32/32 optimizer steps and one epoch, then passed fresh-process reload verification. Final trainer validation loss was **0.996254** and reloaded validation loss was **0.996313**, a **7.56%** reduction from the unadapted baseline. All losses and gradient norms were finite, nonzero gradients were observed, and **992 adapter tensors changed** during resumed training. Checkpoints 24 and 32, including optimizer/scheduler/RNG state, were retained. Peak allocated/reserved memory in the resumed training process was **164.74/260.44 GiB**. The GPU was released after verification. All four adapter generations reached the 256-token cap, with three still inside reasoning; generation usability and task correctness therefore remain unestablished. The README and committed snapshots now contain the completed result.

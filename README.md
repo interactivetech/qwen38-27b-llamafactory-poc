@@ -2,7 +2,7 @@
 
 A reproducible, single-GPU [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory) workflow for fine-tuning [Qwen/Qwen3.8-27B](https://huggingface.co/Qwen/Qwen3.8-27B) on text trajectories from [TerminalHorizon-3K](https://huggingface.co/datasets/shunzou05/TerminalHorizon-3K).
 
-**Measured on one NVIDIA B300:** the 2K smoke test passed training, adapter saving, and fresh-process reload. A 32K forward/backward/optimizer capacity probe also passed. The resumed 32K learning pilot is in progress; its step-16 checkpoint reduced held-out loss by **6.47%**. The 32K pilot has **not** completed final training or reload verification.
+**Measured on one NVIDIA B300:** the 2K smoke test passed training, adapter saving, and fresh-process reload. A 32K forward/backward/optimizer capacity probe also passed. The 32K learning pilot completed **32 optimizer steps / one epoch** and passed fresh-process adapter verification. Reloaded held-out loss decreased by **7.56%**. Generated-output quality still needs a longer-budget or task-level evaluation.
 
 ## Results
 
@@ -23,7 +23,7 @@ Recorded November 23, 2026. Small machine-readable evidence is committed under [
 
 This smoke test establishes that training and the saved adapter work. Its reload loss is on a prepared training example, **not a held-out quality measurement**. The 10 steps visit a subset of the 32-example dataset. [Full smoke-test metrics](results/smoke_test.json).
 
-### 32K capacity probe and partial learning pilot
+### Completed 32K learning pilot
 
 | Measurement | Result |
 | --- | --- |
@@ -34,16 +34,32 @@ This smoke test establishes that training and the saved adapter work. Its reload
 | Pilot split | 64 training / 16 validation trajectories from 80 distinct task groups |
 | Prepared training lengths | 20,517–32,759 tokens, 12–44 messages |
 | Prepared validation lengths | 24,575–32,241 tokens, 10–32 messages |
-| Planned / completed / saved steps | 32 planned; 16 completed; checkpoint 16 saved |
+| Planned / completed / saved steps | 32 / 32 completed; checkpoint 32 saved (checkpoints 24 and 32 retained) |
 | Base-model validation loss | 1.077827 |
-| Adapter validation loss, step 16 | 1.008066 |
-| Relative held-out loss reduction | **6.47%** |
-| Run status | In progress; resumed from checkpoint 8 after an initial user-requested stop |
-| Final 32K adapter verification | Not yet run |
+| Adapter validation loss, step 32 (trainer) | 0.996254 |
+| Reloaded adapter validation loss | 0.996313 |
+| Relative held-out loss reduction after reload | **7.56%** |
+| Run status | Passed; completed after resuming from checkpoint 8 |
+| Final 32K adapter verification | Passed: finite loss on all 16 held-out examples; four generations completed |
+| Training-process peak allocated / reserved GPU memory | 164.74 / 260.44 GiB (resumed process) |
+| Adapter update checks | Nonzero gradients; 992 adapter tensors changed during resumed training |
 
-Validation loss is the mean of per-example assistant-token cross entropy over the same 16 held-out examples. The step-16 reduction exceeds the pilot's predefined **5%** learning-signal threshold. Completing all 32 steps and fresh-process verification is still required to pass the full pilot. It is a partial-run result, not evidence that the full pilot passed or that terminal-task completion improved. No commands from the dataset or model generations are executed.
+Validation loss is the mean of per-example assistant-token cross entropy over the same 16 held-out examples. The reloaded adapter exceeds the pilot's predefined **5%** learning-signal threshold, and the full training/reload acceptance checks passed. With only 16 held-out tasks, this remains exploratory evidence of imitation learning; it does not establish improved terminal-task completion. No commands from the dataset or model generations are executed.
 
-See [pilot evidence](results/pilot_32k.json), [training and validation curves](results/training_curves.csv), and [hardware/runtime versions](results/environment.json). Capacity-probe memory is measured separately from the subsequent training run.
+The held-out curve improved throughout the run:
+
+| Optimizer step | Validation loss |
+| --- | --- |
+| 0 (base model) | 1.077827 |
+| 8 | 1.024374 |
+| 16 | 1.008066 |
+| 24 | 1.000987 |
+| 32 | 0.996254 |
+| 32, fresh-process reload | 0.996313 |
+
+**Generation limitation:** all four adapter samples reached the 256-new-token cap; three had not closed their reasoning block. The generation check passed operationally, but these capped samples cannot establish command correctness or task completion. A longer generation budget and isolated task evaluation are needed to assess that.
+
+See [pilot evidence](results/pilot_32k.json), [training and validation curves](results/training_curves.csv), and [hardware/runtime versions](results/environment.json). Capacity-probe memory is measured separately from the subsequent training run. Allocated and reserved memory are distinct measurements; reserved memory includes the allocator cache.
 
 ## Reproduce
 
@@ -67,7 +83,7 @@ export SMOKE_ROOT=/path/to/fast-scratch/qwen38-27b-llamafactory-test
 
 Each pilot creates a timestamped run directory under `$SMOKE_ROOT/runs/`. The original smoke adapter is protected against overwrite. For another independent smoke run, use another scratch root; do not delete a saved adapter to rerun it. No external experiment reporting, quantization, DeepSpeed, optional attention kernels, or full-model merging is enabled.
 
-The full 32K pilot was estimated at roughly 2–2.5 hours plus generation checks using the measured worst-case probe on this machine. This is an estimate, not a completed-run timing. Reference PyTorch kernels are intentionally used and are slow at long context lengths.
+The final report records **130.19 minutes** of accumulated pipeline elapsed time, including the initial interrupted attempt and resumed execution through verification; the pause between runs is excluded. The resumed trainer invocation reported **80.32 minutes**, including its scheduled evaluations; this is not a full uninterrupted-training timing. Reference PyTorch kernels are intentionally used and are slow at long context lengths.
 
 ### Resume a stopped pilot
 
@@ -80,7 +96,7 @@ nohup ./setup.sh --run pilot --phase resume --run-dir "$PILOT_RUN" \
 tail -f "$PILOT_RUN/resume.log"
 ```
 
-The published partial run's ID is `pilot-20261123T191916743546Z`. It was initially resumed from step 8, repeating unsaved step 9; checkpoint 16 is now saved. Future resume commands select the latest checkpoint available locally. Press Ctrl-C to stop following the log without stopping the `nohup` job. A resumed run records errors and stops; it does not silently restart training at a different context length. Use `--seq-len 16384` when resuming a run that had already fallen back to 16K.
+The published completed run's ID is `pilot-20261123T191916743546Z`. It resumed from checkpoint 8 and finished at step 32. Its final adapter is under `context-32768/adapter/` in scratch. The resume example above is for other unfinished runs; the runner refuses to restart this already verified run. Press Ctrl-C to stop following the log without stopping the `nohup` job. A resumed run records errors and stops; it does not silently restart training at a different context length. Use `--seq-len 16384` when resuming a run that had already fallen back to 16K.
 
 ## Method and pinned stack
 
