@@ -2,7 +2,7 @@
 
 A reproducible, single-GPU [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory) workflow for fine-tuning [Qwen/Qwen3.8-27B](https://huggingface.co/Qwen/Qwen3.8-27B) on text trajectories from [TerminalHorizon-3K](https://huggingface.co/datasets/shunzou05/TerminalHorizon-3K).
 
-**Measured on one NVIDIA B300:** the 2K smoke test passed training, adapter saving, and fresh-process reload. A 32K forward/backward/optimizer capacity probe also passed. The longer learning pilot was deliberately stopped after step 9 of 32; its step-8 checkpoint reduced held-out loss by **4.96%**. The 32K pilot has **not** completed final training or reload verification.
+**Measured on one NVIDIA B300:** the 2K smoke test passed training, adapter saving, and fresh-process reload. A 32K forward/backward/optimizer capacity probe also passed. The resumed 32K learning pilot is in progress; its step-16 checkpoint reduced held-out loss by **6.47%**. The 32K pilot has **not** completed final training or reload verification.
 
 ## Results
 
@@ -34,14 +34,14 @@ This smoke test establishes that training and the saved adapter work. Its reload
 | Pilot split | 64 training / 16 validation trajectories from 80 distinct task groups |
 | Prepared training lengths | 20,517–32,759 tokens, 12–44 messages |
 | Prepared validation lengths | 24,575–32,241 tokens, 10–32 messages |
-| Planned / completed / saved steps | 32 planned; 9 completed; checkpoint 8 saved |
+| Planned / completed / saved steps | 32 planned; 16 completed; checkpoint 16 saved |
 | Base-model validation loss | 1.077827 |
-| Adapter validation loss, step 8 | 1.024374 |
-| Relative held-out loss reduction | **4.96%** |
-| Stop reason | User requested stopping and moving execution to another terminal |
+| Adapter validation loss, step 16 | 1.008066 |
+| Relative held-out loss reduction | **6.47%** |
+| Run status | In progress; resumed from checkpoint 8 after an initial user-requested stop |
 | Final 32K adapter verification | Not yet run |
 
-Validation loss is the mean of per-example assistant-token cross entropy over the same 16 held-out examples. The observed reduction is just below the pilot's predefined **5%** learning-signal threshold. It is a partial-run result, not evidence that the full pilot passed or that terminal-task completion improved. No commands from the dataset or model generations are executed.
+Validation loss is the mean of per-example assistant-token cross entropy over the same 16 held-out examples. The step-16 reduction exceeds the pilot's predefined **5%** learning-signal threshold. Completing all 32 steps and fresh-process verification is still required to pass the full pilot. It is a partial-run result, not evidence that the full pilot passed or that terminal-task completion improved. No commands from the dataset or model generations are executed.
 
 See [pilot evidence](results/pilot_32k.json), [training and validation curves](results/training_curves.csv), and [hardware/runtime versions](results/environment.json). Capacity-probe memory is measured separately from the subsequent training run.
 
@@ -80,7 +80,7 @@ nohup ./setup.sh --run pilot --phase resume --run-dir "$PILOT_RUN" \
 tail -f "$PILOT_RUN/resume.log"
 ```
 
-The published partial run's ID is `pilot-20261123T191916743546Z`. It resumes from step 8; unsaved step 9 is repeated. Press Ctrl-C to stop following the log without stopping the `nohup` job. A resumed run records errors and stops; it does not silently restart training at a different context length. Use `--seq-len 16384` when resuming a run that had already fallen back to 16K.
+The published partial run's ID is `pilot-20261123T191916743546Z`. It was initially resumed from step 8, repeating unsaved step 9; checkpoint 16 is now saved. Future resume commands select the latest checkpoint available locally. Press Ctrl-C to stop following the log without stopping the `nohup` job. A resumed run records errors and stops; it does not silently restart training at a different context length. Use `--seq-len 16384` when resuming a run that had already fallen back to 16K.
 
 ## Method and pinned stack
 

@@ -30,7 +30,7 @@ PYTHONPYCACHEPREFIX=/scratch1/mendeza/qwen38-27b-llamafactory-test/cache/pycache
 
 Implementation run: `/scratch1/mendeza/qwen38-27b-llamafactory-test/runs/pilot-20261123T191916743546Z/`.
 
-Training was stopped at the user's request after step 9. Checkpoint 8 is the latest saved state; its held-out loss was **1.024374**, compared with **1.077827** for the base model (a **4.96%** reduction). The 32K probe passed with **179.1 GiB** peak allocated memory; no context fallback was needed.
+Training was stopped at the user's request after step 9. Checkpoint 8 was saved at that stop; its held-out loss was **1.024374**, compared with **1.077827** for the base model (a **4.96%** reduction). The 32K probe passed with **179.1 GiB** peak allocated memory; no context fallback was needed.
 
 Resume that run from another terminal and automatically verify the final adapter:
 
@@ -43,3 +43,5 @@ tail -f "$PILOT_RUN/resume.log"
 ```
 
 `resume` selects the latest complete checkpoint in the selected context directory. It validates the saved step budget, restores historical training/evaluation metrics, and runs only training and final verification. Data preparation, the capacity probe, and baseline evaluation are reused. An optional `--resume-from-checkpoint` selects a checkpoint explicitly. This continuation stops and records errors; it does not automatically start a new fallback run. Pressing Ctrl-C while following the log stops the log viewer; the `nohup` job continues. The final report will be written to `$PILOT_RUN/summary.json`.
+
+The pilot subsequently resumed from checkpoint 8. At the step-16 evaluation, validation loss was **1.008066**, a **6.47%** reduction from the base-model baseline; checkpoint 16 was saved. This exceeds the 5% learning-signal threshold at an intermediate checkpoint. Training is still in progress, and final verification has not yet run. The committed result snapshots and README reflect this update.
