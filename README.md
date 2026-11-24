@@ -81,6 +81,10 @@ On the four new test contexts plus four controlled instruction probes, both adap
 
 The blue training line is a trailing 10-step mean; faint blue shows individual batches. Orange shows validation on the same 32 held-out groups at each completed evaluation. Training batches contain different tasks at each step, so their fluctuations are not a fixed-set quality estimate. The lower panel reports the total adapter gradient L2 norm **before** clipping (threshold 1.0). The dashed line marks the selected final checkpoint, step 190.
 
+![Non-padding tokens processed per optimizer step, with trailing and running averages](results/overnight_tokens_per_step.png)
+
+Training averaged **60,010.7 non-padding tokens per optimizer step**, or **30,005.4 tokens per example** with two examples accumulated per step. The orange line is the running mean across completed steps; blue shows the trailing 10-step mean and faint blue shows each step. Counts come from differences in the cumulative training-token counter and include prompt and assistant tokens, excluding padding and evaluation. See the [per-step token counts and averages](results/overnight_tokens_per_step.csv) and [vector figure](results/overnight_tokens_per_step.svg).
+
 See [full metrics and uncertainty intervals](results/overnight_32k.json), [training data for the plot](results/overnight_training_curves.csv), [validation data for the plot](results/overnight_validation_curves.csv), and the [vector figure](results/overnight_learning_curves.svg). The committed export excludes prompts, generated responses, absolute paths, and weights; full paired responses remain in the local scratch run.
 
 ## Output-quality screen

@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-11-24T14:38:05.383317+00:00",
+  "exported_at": "2026-11-24T14:43:02.351664+00:00",
   "run_id": "overnight-20261124T022453Z",
   "source_sha256": {
     "summary.json": "17ffdaba9198388b6a21a0f590c7e5dd050896412d3d6c7bbd3e82046b8d2e19",
@@ -8,5 +8,5 @@
     "validation_curves.csv": "aac063db30e3b3a7b7c2267dc5480d91ed5bf32d532f0ce64527d3df699e9f33"
   },
   "description": "Allowlisted metrics and plots; no prompts, responses, model weights, checkpoint paths, or absolute paths.",
-  "plotting": "matplotlib; raw per-step loss, trailing 10-step mean, validation checkpoints, pre-clipping adapter gradient L2 norm"
+  "plotting": "matplotlib; raw per-step loss, trailing 10-step mean, validation checkpoints, pre-clipping adapter gradient L2 norm; per-step non-padding tokens and running mean"
 }

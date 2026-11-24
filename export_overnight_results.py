@@ -112,6 +112,7 @@ def export(run, output):
             writer.writeheader()
             writer.writerows(data)
     plot(rows, validation, result, output)
+    plot_tokens(rows, output)
     sources = [
         "summary.json",
         "experiment.json",
@@ -128,7 +129,7 @@ def export(run, output):
                 for name in sources
             },
             description="Allowlisted metrics and plots; no prompts, responses, model weights, checkpoint paths, or absolute paths.",
-            plotting="matplotlib; raw per-step loss, trailing 10-step mean, validation checkpoints, pre-clipping adapter gradient L2 norm",
+            plotting="matplotlib; raw per-step loss, trailing 10-step mean, validation checkpoints, pre-clipping adapter gradient L2 norm; per-step non-padding tokens and running mean",
         ),
     )
 
@@ -233,6 +234,110 @@ def plot(rows, validation, result, output):
         fig.tight_layout(rect=(0, 0.085, 1, 0.95))
         fig.savefig(output / "overnight_learning_curves.png", dpi=180)
         fig.savefig(output / "overnight_learning_curves.svg", metadata={"Date": None})
+        plt.close(fig)
+
+
+def token_usage(rows):
+    """Difference cumulative counters; each optimizer step includes all microbatches."""
+    result = []
+    previous_tokens, previous_examples, previous_step = 0, 0, 0
+    for row in rows:
+        step = int(row["step"])
+        cumulative_tokens = int(row["non_padding_tokens"])
+        cumulative_examples = int(row["examples_seen"])
+        tokens = cumulative_tokens - previous_tokens
+        examples = cumulative_examples - previous_examples
+        if step != previous_step + 1 or tokens <= 0 or examples <= 0:
+            raise ValueError(
+                "Token usage requires consecutive steps and increasing counters"
+            )
+        result.append(
+            dict(
+                step=step,
+                non_padding_tokens_this_step=tokens,
+                examples_this_step=examples,
+                mean_tokens_per_example=tokens / examples,
+                running_mean_tokens_per_step=cumulative_tokens / step,
+            )
+        )
+        previous_tokens, previous_examples, previous_step = (
+            cumulative_tokens,
+            cumulative_examples,
+            step,
+        )
+    return result
+
+
+def plot_tokens(rows, output):
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.ticker import StrMethodFormatter
+
+    usage = token_usage(rows)
+    with (output / "overnight_tokens_per_step.csv").open("w", newline="") as fp:
+        writer = csv.DictWriter(fp, fieldnames=list(usage[0]), lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(usage)
+    steps = [r["step"] for r in usage]
+    tokens = [r["non_padding_tokens_this_step"] for r in usage]
+    running_mean = [r["running_mean_tokens_per_step"] for r in usage]
+    smooth = [
+        sum(tokens[max(0, i - 9) : i + 1]) / len(tokens[max(0, i - 9) : i + 1])
+        for i in range(len(tokens))
+    ]
+    with plt.rc_context(
+        {
+            "font.size": 10,
+            "axes.spines.top": False,
+            "axes.spines.right": False,
+            "svg.hashsalt": "overnight-tokens",
+            "savefig.facecolor": "white",
+        }
+    ):
+        fig, ax = plt.subplots(figsize=(10, 5.5))
+        ax.plot(
+            steps,
+            tokens,
+            color="#2474b5",
+            alpha=0.3,
+            linewidth=0.9,
+            label="Tokens processed each optimizer step",
+        )
+        ax.plot(
+            steps, smooth, color="#2474b5", linewidth=1.8, label="Trailing 10-step mean"
+        )
+        ax.plot(
+            steps,
+            running_mean,
+            color="#d25b20",
+            linewidth=2,
+            label="Running mean tokens per step",
+        )
+        ax.set(
+            title="Qwen3.8-27B · non-padding training tokens per optimizer step",
+            xlabel="Optimizer step",
+            ylabel="Non-padding input tokens",
+            xlim=(0, steps[-1] + 3),
+        )
+        ax.yaxis.set_major_formatter(StrMethodFormatter("{x:,.0f}"))
+        ax.grid(alpha=0.18)
+        ax.legend(loc="lower right", frameon=False, fontsize=9)
+        mean = sum(tokens) / len(tokens)
+        examples = int(rows[-1]["examples_seen"])
+        fig.text(
+            0.09,
+            0.025,
+            f"Run average: {mean:,.1f} tokens/step · {sum(tokens) / examples:,.1f} tokens/example\n"
+            f"{sum(tokens):,} non-padding tokens across {len(steps)} optimizer steps and {examples} examples. "
+            "Includes prompt + assistant tokens; excludes padding and evaluation.",
+            fontsize=8.5,
+            color="#555555",
+        )
+        fig.tight_layout(rect=(0, 0.09, 1, 1))
+        fig.savefig(output / "overnight_tokens_per_step.png", dpi=180)
+        fig.savefig(output / "overnight_tokens_per_step.svg", metadata={"Date": None})
         plt.close(fig)
 
 
