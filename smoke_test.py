@@ -563,10 +563,16 @@ def all_commands(args):
 
 
 def main():
-    if len(sys.argv) > 1 and sys.argv[1] == "overnight":
-        from overnight import main as overnight_main
+    if len(sys.argv) > 1 and sys.argv[1] == "sft-demo":
+        from sft_demo import main as demo_main
 
-        return overnight_main(sys.argv[2:])
+        return demo_main(sys.argv[2:])
+    if len(sys.argv) > 1 and sys.argv[1] in ("sft", "overnight"):
+        if sys.argv[1] == "overnight":
+            print("DEPRECATED: use ./setup.sh --run sft.", file=sys.stderr, flush=True)
+        from sft_train import main as sft_main
+
+        return sft_main(sys.argv[2:])
     if len(sys.argv) > 1 and sys.argv[1] == "quality":
         from quality_test import main as quality_main
 
@@ -578,7 +584,18 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "command",
-        choices=["preflight", "prepare", "train", "verify", "all", "pilot", "quality"],
+        choices=[
+            "preflight",
+            "prepare",
+            "train",
+            "verify",
+            "all",
+            "pilot",
+            "quality",
+            "sft",
+            "sft-demo",
+            "overnight",
+        ],
     )
     parser.add_argument(
         "--root", type=Path, default=Path(os.environ.get("SMOKE_ROOT", DEFAULT_ROOT))

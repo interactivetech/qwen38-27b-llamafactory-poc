@@ -1,0 +1,4 @@
+vllm==0.34.0
+# Matching precompiled kernels for hosts without nvcc; vendor release wheels.
+flashinfer-cubin @ https://github.com/flashinfer-ai/flashinfer/releases/download/v0.7.3/flashinfer_cubin-0.7.3-py3-none-any.whl#sha256=115b96065fa2dcc1674c74fcb0544ec2890a6fa4a8519b2251d1f6ab3d780093
+flashinfer-jit-cache @ https://github.com/flashinfer-ai/flashinfer/releases/download/v0.7.3/flashinfer_jit_cache-0.7.3+cu130-cp39-abi3-manylinux_2_28_x86_64.whl#sha256=567dc9a3fa1bc0f9856fbd7e2550ce3e4b169a69ca2accb6c6e0a45648c61c6c

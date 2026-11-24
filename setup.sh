@@ -11,8 +11,27 @@ export PYTHONPYCACHEPREFIX="$SMOKE_ROOT/cache/pycache"
 export UV_NO_CONFIG=1
 export UV_PYTHON_BIN_DIR="$SMOKE_ROOT/bin"
 mkdir -p "$TMPDIR" "$SMOKE_ROOT/bin" "$SMOKE_ROOT/logs" "$SMOKE_ROOT/data" "$UV_CACHE_DIR"
+REPO_DIR="$(dirname "$(realpath "$0")")"
+if [[ "${1:-}" == --tracking ]]; then
+    shift
+    if [[ ! -x "$SMOKE_ROOT/tracking-venv/bin/python" ]]; then
+        echo "Tracking environment missing. Run ./setup.sh --setup-tracking first." >&2
+        exit 2
+    fi
+    exec "$SMOKE_ROOT/tracking-venv/bin/python" "$REPO_DIR/sft_tracking.py" "$@"
+fi
+TRACKING_ONLY=0
+if [[ "${1:-}" == --setup-tracking ]]; then TRACKING_ONLY=1; fi
 if [[ "${1:-}" == --run ]]; then
     shift
+    if [[ "${1:-}" == terminalbench ]]; then
+        shift
+        if [[ ! -x "$SMOKE_ROOT/eval-harbor-venv/bin/python" ]]; then
+            echo "Evaluation environment missing. Run ./setup.sh --setup-eval first." >&2
+            exit 2
+        fi
+        exec "$SMOKE_ROOT/eval-harbor-venv/bin/python" "$REPO_DIR/terminalbench.py" "$@"
+    fi
     exec "$SMOKE_ROOT/venv/bin/python" "$(dirname "$(realpath "$0")")/smoke_test.py" "$@"
 fi
 exec > >(tee -a "$SMOKE_ROOT/logs/setup.log") 2>&1
@@ -22,6 +41,58 @@ if [[ ! -x "$SMOKE_ROOT/bin/uv" ]]; then
 fi
 UV="$SMOKE_ROOT/bin/uv"
 "$UV" python install 3.12.12
+if [[ "${1:-}" == --setup-eval ]]; then
+    for component in harbor vllm; do
+        eval_env="$SMOKE_ROOT/eval-$component-venv"
+        if [[ ! -x "$eval_env/bin/python" ]]; then
+            "$UV" venv --python 3.12.12 "$eval_env"
+        fi
+        "$UV" pip sync --python "$eval_env/bin/python" "$REPO_DIR/requirements-eval-$component.lock"
+        "$UV" pip check --python "$eval_env/bin/python"
+        "$eval_env/bin/python" - "$REPO_DIR/requirements-eval-$component.lock" "$eval_env/ready.json" "$component" <<'PYEVAL'
+import hashlib, importlib.metadata as m, json, sys
+from pathlib import Path
+component = sys.argv[3]
+if component == "harbor":
+    url = json.loads(m.distribution("harbor").read_text("direct_url.json"))
+    assert url["vcs_info"]["commit_id"] == "39c2219a41b3caa7a689cef1882263b5a93ae93f"
+    from harbor.environments.singularity.singularity import SingularityEnvironment
+else:
+    assert m.version("vllm") == "0.34.0"
+    assert m.version("flashinfer-python") == m.version("flashinfer-cubin") == "0.7.3"
+    assert m.version("flashinfer-jit-cache") == "0.7.3+cu130"
+    import vllm
+Path(sys.argv[2]).write_text(json.dumps(dict(lock_sha256=hashlib.sha256(Path(sys.argv[1]).read_bytes()).hexdigest(),
+    version=m.version(component))) + "\n")
+PYEVAL
+    done
+    mkdir -p "$SMOKE_ROOT/eval-bin"
+    if ! command -v singularity >/dev/null; then
+        ln -sfn "$(command -v apptainer)" "$SMOKE_ROOT/eval-bin/singularity"
+    fi
+    exit 0
+fi
+setup_tracking() {
+    if [[ ! -x "$SMOKE_ROOT/tracking-venv/bin/python" ]]; then
+        "$UV" venv --python 3.12.12 "$SMOKE_ROOT/tracking-venv"
+    fi
+    "$UV" pip sync --python "$SMOKE_ROOT/tracking-venv/bin/python" "$REPO_DIR/requirements-tracking.lock"
+    "$UV" pip check --python "$SMOKE_ROOT/tracking-venv/bin/python"
+    "$SMOKE_ROOT/tracking-venv/bin/python" - "$REPO_DIR/requirements-tracking.lock" "$SMOKE_ROOT/tracking-venv/ready.json" <<'PYTRACK'
+import hashlib, json, sys
+from pathlib import Path
+import wandb
+# Check the settings our reporter requires, without opening any network connection.
+wandb.Settings(init_timeout=10, finish_timeout=3, console="off", disable_code=True,
+               disable_git=True, disable_job_creation=True, x_disable_stats=True, x_disable_meta=True)
+Path(sys.argv[2]).write_text(json.dumps(dict(lock_sha256=hashlib.sha256(Path(sys.argv[1]).read_bytes()).hexdigest(),
+                                          wandb_version=wandb.__version__)) + "\n")
+PYTRACK
+}
+if [[ "$TRACKING_ONLY" == 1 ]]; then
+    setup_tracking
+    exit 0
+fi
 if [[ ! -x "$SMOKE_ROOT/venv/bin/python" ]]; then
     "$UV" venv --python 3.12.12 "$SMOKE_ROOT/venv"
 fi
@@ -54,3 +125,5 @@ fi
 "$UV" pip check --python "$SMOKE_ROOT/venv/bin/python"
 "$UV" pip freeze --python "$SMOKE_ROOT/venv/bin/python" > "$SMOKE_ROOT/installed.txt"
 "$SMOKE_ROOT/venv/bin/python" "$(dirname "$(realpath "$0")")/smoke_test.py" preflight
+
+setup_tracking

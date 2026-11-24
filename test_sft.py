@@ -1,4 +1,4 @@
-"""CPU-only overnight control-plane tests; no dataset download or GPU allocation."""
+"""CPU-only SFT control-plane tests; no dataset download or GPU allocation."""
 
 import contextlib
 import copy
@@ -11,16 +11,16 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-import overnight as night
+import sft_train as sft
 import smoke_test as smoke
 
 
-class OvernightTests(unittest.TestCase):
+class SFTTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         root = Path(self.temp.name)
-        run = root / "runs/overnight"
+        run = root / "runs/sft"
         ref = root / "runs/reference"
         attempt = run / "context-32768"
         attempt.mkdir(parents=True)
@@ -50,14 +50,15 @@ class OvernightTests(unittest.TestCase):
             test_examples=32,
             resume=False,
             phase="all",
+            progress="off",
         )
-        night.initialize(self.args)
+        sft.initialize(self.args)
 
     def checkpoint(self, step, loss=None):
         args = self.args
         path = args.attempt / f"checkpoints/checkpoint-{step}"
         path.mkdir(parents=True)
-        for name in night.CHECKPOINT_FILES:
+        for name in sft.CHECKPOINT_FILES:
             (path / name).write_bytes(b"fixture")
         state = dict(
             global_step=step,
@@ -74,7 +75,7 @@ class OvernightTests(unittest.TestCase):
             path / "complete.json",
             dict(
                 identity=args.identity,
-                files={n: night.sha(path / n) for n in night.CHECKPOINT_FILES},
+                files={n: sft.sha(path / n) for n in sft.CHECKPOINT_FILES},
             ),
         )
         if loss is not None:
@@ -84,7 +85,7 @@ class OvernightTests(unittest.TestCase):
                     complete=True,
                     loss=loss,
                     per_example_losses=[loss] * 32,
-                    checkpoint_sha256=night.sha(path / "complete.json"),
+                    checkpoint_sha256=sft.sha(path / "complete.json"),
                 ),
             )
         return path
@@ -94,15 +95,15 @@ class OvernightTests(unittest.TestCase):
             k: [dict(source_index=i, task_group=f"g{i}", conversation_sha256=f"h{i}")]
             for i, k in enumerate(("train", "validation", "test", "anchor"))
         }
-        night.isolated(rows)
+        sft.isolated(rows)
         for field in ("task_group", "conversation_sha256", "source_index"):
             bad = copy.deepcopy(rows)
             bad["test"][0][field] = bad["anchor"][0][field]
             with self.assertRaises(ValueError):
-                night.isolated(bad)
+                sft.isolated(bad)
         rows["train"].append(rows["train"][0])
         with self.assertRaises(ValueError):
-            night.isolated(rows)
+            sft.isolated(rows)
 
     def test_encoding_keeps_complete_turns_reasoning_and_assistant_masks(self):
         class Template:
@@ -138,11 +139,11 @@ class OvernightTests(unittest.TestCase):
         ]
         item = dict(
             source_index=1,
-            task_group=night.pilot.task_key(messages),
-            conversation_sha256=night.pilot.digest(messages),
+            task_group=sft.pilot.task_key(messages),
+            conversation_sha256=sft.pilot.digest(messages),
             conversations=messages,
         )
-        result = night.encode(item, self.args, None, template, Processor())
+        result = sft.encode(item, self.args, None, template, Processor())
         row, record, prefix = result
         self.assertEqual(prefix, messages[:4])
         self.assertEqual(record["messages"], 4)
@@ -153,71 +154,90 @@ class OvernightTests(unittest.TestCase):
         self.assertEqual(row["labels"][:4], [-100] * 4)
         self.args.seq_len = len(messages[0]["content"]) + len(messages[1]["content"])
         self.assertEqual(
-            night.encode(item, self.args, None, template, Processor())[2], messages[:2]
+            sft.encode(item, self.args, None, template, Processor())[2], messages[:2]
         )
         self.assertEqual(len(messages), 5)
 
     def test_completion_marker_and_hashes_required(self):
         checkpoint = self.checkpoint(8)
         self.assertEqual(
-            night.complete_checkpoint(checkpoint, self.args.identity)["global_step"], 8
+            sft.complete_checkpoint(checkpoint, self.args.identity)["global_step"], 8
         )
         (checkpoint / "complete.json").unlink()
-        self.assertEqual(night.checkpoints(self.args), [])
+        self.assertEqual(sft.checkpoints(self.args), [])
         checkpoint = self.checkpoint(16)
         (checkpoint / "optimizer.pt").write_bytes(b"corrupt")
         with self.assertRaisesRegex(ValueError, "corrupt"):
-            night.complete_checkpoint(checkpoint)
-        self.assertEqual(night.checkpoints(self.args), [])
+            sft.complete_checkpoint(checkpoint)
+        self.assertEqual(sft.checkpoints(self.args), [])
 
     def test_selection_uses_only_completed_validation_not_latest(self):
         best = self.checkpoint(8, 0.8)
         self.checkpoint(16, 0.9)
         latest = self.checkpoint(24)
-        self.assertEqual(night.select_checkpoint(self.args)["path"], str(best))
-        self.assertEqual(night.checkpoints(self.args)[-1][1], latest)
+        self.assertEqual(sft.select_checkpoint(self.args)["path"], str(best))
+        self.assertEqual(sft.checkpoints(self.args)[-1][1], latest)
         smoke.write_json(latest / "validation.json", dict(complete=False, loss=0.1))
-        self.assertEqual(night.select_checkpoint(self.args)["step"], 8)
+        self.assertEqual(sft.select_checkpoint(self.args)["step"], 8)
         smoke.write_json(
             latest / "validation.json",
             dict(complete=True, loss=0.1, per_example_losses=[0.1] * 32),
         )
-        self.assertEqual(night.select_checkpoint(self.args)["step"], 8)
-        marker = night.read(best / "validation.json")
+        self.assertEqual(sft.select_checkpoint(self.args)["step"], 8)
+        marker = sft.read(best / "validation.json")
         marker["checkpoint_sha256"] = "wrong-checkpoint"
         smoke.write_json(best / "validation.json", marker)
-        self.assertEqual(night.select_checkpoint(self.args)["step"], 16)
+        self.assertEqual(sft.select_checkpoint(self.args)["step"], 16)
 
     def test_resume_preserves_absolute_deadlines_and_identity(self):
         original = dict(self.args.budget)
         self.args.resume = True
-        with patch.object(
-            night.time, "time", return_value=original["started_at"] + 7200
-        ):
-            night.initialize(self.args)
+        with patch.object(sft.time, "time", return_value=original["started_at"] + 7200):
+            sft.initialize(self.args)
         self.assertEqual(self.args.budget, original)
         self.args.hours = 11
         with self.assertRaisesRegex(ValueError, "changed"):
-            night.initialize(self.args)
+            sft.initialize(self.args)
+
+    def test_resume_preserves_checkpoint_identity_with_equivalent_numeric_defaults(
+        self,
+    ):
+        original = self.args.identity
+        checkpoint = self.checkpoint(8)
+        self.args.resume = True
+        self.args.hours = float(self.args.hours)
+        sft.initialize(self.args)
+        self.assertEqual(self.args.identity, original)
+        self.assertEqual(
+            sft.complete_checkpoint(checkpoint, self.args.identity)["global_step"], 8
+        )
+
+    def test_max_steps_default_and_resume_identity(self):
+        self.assertEqual(sft.step_budget(self.args), 200)
+        self.args.max_steps = 5
+        self.assertEqual(sft.step_budget(self.args), 5)
+        self.args.resume = True
+        with self.assertRaisesRegex(ValueError, "changed"):
+            sft.initialize(self.args)
 
     def test_resume_rejects_changed_dependencies_and_reference_adapter(self):
         self.args.resume = True
         (self.args.root / "requirements.lock").write_text("changed")
         with self.assertRaisesRegex(ValueError, "changed"):
-            night.initialize(self.args)
+            sft.initialize(self.args)
 
     def test_resume_requires_complete_step_history(self):
         checkpoint = self.checkpoint(8)
-        state = night.read(checkpoint / "trainer_state.json")
+        state = sft.read(checkpoint / "trainer_state.json")
         state["log_history"].pop()
         smoke.write_json(checkpoint / "trainer_state.json", state)
-        marker = night.read(checkpoint / "complete.json")
-        marker["files"]["trainer_state.json"] = night.sha(
+        marker = sft.read(checkpoint / "complete.json")
+        marker["files"]["trainer_state.json"] = sft.sha(
             checkpoint / "trainer_state.json"
         )
         smoke.write_json(checkpoint / "complete.json", marker)
         with self.assertRaisesRegex(ValueError, "history"):
-            night.complete_checkpoint(checkpoint)
+            sft.complete_checkpoint(checkpoint)
 
     def simulated_worker(self, phase, cooperative):
         args = self.args
@@ -247,8 +267,8 @@ class OvernightTests(unittest.TestCase):
         def sleep(seconds):
             ticks[0] += seconds
 
-        with patch.object(night.os, "killpg", side_effect=kill):
-            result = night.supervise_worker(
+        with patch.object(sft.os, "killpg", side_effect=kill):
+            result = sft.supervise_worker(
                 args,
                 phase,
                 command=["fake-worker"],
@@ -290,13 +310,13 @@ class OvernightTests(unittest.TestCase):
                 phase=phase, exit_code=1, failure=dict(error="CUDA out of memory")
             )
 
-        with patch.object(night, "supervise_worker", side_effect=worker):
-            self.assertEqual(night.run(self.args), 1)
+        with patch.object(sft, "supervise_worker", side_effect=worker):
+            self.assertEqual(sft.run(self.args), 1)
         self.assertEqual(calls, ["preflight"])
         self.assertEqual(
-            night.read(self.args.run_dir / "status.json")["status"], "failed"
+            sft.read(self.args.run_dir / "status.json")["status"], "failed"
         )
-        summary = night.read(self.args.run_dir / "summary.json")
+        summary = sft.read(self.args.run_dir / "summary.json")
         self.assertFalse(summary["training_verified"])
         self.assertTrue(summary["skipped_work"])
         for name in (
@@ -315,25 +335,25 @@ class OvernightTests(unittest.TestCase):
     def test_expired_resume_never_launches_worker(self):
         self.args.resume = True
         self.args.budget["deadline"] = time.time() - 1
-        with patch.object(night, "supervise_worker") as worker:
-            night.run(self.args)
+        with patch.object(sft, "supervise_worker") as worker:
+            sft.run(self.args)
         worker.assert_not_called()
         self.assertEqual(
-            night.read(self.args.run_dir / "status.json")["status"], "partial"
+            sft.read(self.args.run_dir / "status.json")["status"], "partial"
         )
 
     def test_paired_bootstrap_is_deterministic(self):
-        result = night.bootstrap([1.0, 2.0, 3.0], [0.8, 1.6, 2.4])
+        result = sft.bootstrap([1.0, 2.0, 3.0], [0.8, 1.6, 2.4])
         self.assertAlmostEqual(result["relative_improvement"], 0.2)
         for value in result["relative_95_interval"]:
             self.assertAlmostEqual(value, 0.2)
-        self.assertEqual(result, night.bootstrap([1.0, 2.0, 3.0], [0.8, 1.6, 2.4]))
+        self.assertEqual(result, sft.bootstrap([1.0, 2.0, 3.0], [0.8, 1.6, 2.4]))
 
     def test_partial_report_does_not_claim_verified_training(self):
         self.checkpoint(8, 0.8)
-        night.select_checkpoint(self.args)
-        night.report(self.args, "partial")
-        summary = night.read(self.args.run_dir / "summary.json")
+        sft.select_checkpoint(self.args)
+        sft.report(self.args, "partial")
+        summary = sft.read(self.args.run_dir / "summary.json")
         self.assertFalse(summary["training_verified"])
         self.assertFalse(summary["promising_scaling_result"])
         self.assertEqual(summary["training"]["global_step"], 8)
@@ -385,13 +405,13 @@ class OvernightTests(unittest.TestCase):
             return dict(target=float(row["input_ids"][0] + 1))
 
         def at_eight(args, training=False):
-            return night.read(args.run_dir / "progress.json", {}).get("step", 0) >= 8
+            return sft.read(args.run_dir / "progress.json", {}).get("step", 0) >= 8
 
         with (
-            patch.object(night, "checked_data", return_value=(manifest, data)),
-            patch.object(night, "load_model", side_effect=load),
-            patch.object(night.pilot, "batch_for", side_effect=batch),
-            patch.object(night, "memory", return_value={}),
+            patch.object(sft, "checked_data", return_value=(manifest, data)),
+            patch.object(sft, "load_model", side_effect=load),
+            patch.object(sft.pilot, "batch_for", side_effect=batch),
+            patch.object(sft, "memory", return_value={}),
             patch.object(torch.cuda, "get_rng_state_all", return_value=[]),
             patch.object(torch.cuda, "set_rng_state_all"),
             patch.object(torch.cuda, "empty_cache"),
@@ -399,7 +419,7 @@ class OvernightTests(unittest.TestCase):
                 torch, "autocast", side_effect=lambda *a, **k: contextlib.nullcontext()
             ),
             patch.object(
-                night,
+                sft,
                 "score",
                 return_value=dict(
                     complete=True, loss=0.8, per_example_losses=[0.8] * 32
@@ -407,17 +427,17 @@ class OvernightTests(unittest.TestCase):
             ),
             patch("builtins.print"),
         ):
-            with patch.object(night, "stopped", side_effect=at_eight):
-                night.train(args)
-            checkpoint = night.checkpoints(args)[-1]
+            with patch.object(sft, "stopped", side_effect=at_eight):
+                sft.train(args)
+            checkpoint = sft.checkpoints(args)[-1]
             initial_history = copy.deepcopy(checkpoint[2]["log_history"])
             self.assertEqual(checkpoint[0], 8)
             self.assertTrue(checkpoint[2]["verified_updates"])
             self.assertEqual(len(seen), 16)
             first_weight = models[-1].lora_B.item()
-            with patch.object(night, "stopped", return_value=False):
-                night.train(args)
-            latest = night.checkpoints(args)[-1]
+            with patch.object(sft, "stopped", return_value=False):
+                sft.train(args)
+            latest = sft.checkpoints(args)[-1]
             self.assertEqual(latest[0], 32)
             self.assertEqual(latest[2]["log_history"][:8], initial_history)
             self.assertEqual(latest[2]["examples_seen"], 64)
@@ -428,8 +448,22 @@ class OvernightTests(unittest.TestCase):
 
             random.Random(42).shuffle(expected_order)
             self.assertEqual(seen, expected_order)
-            self.assertEqual(len(night.checkpoints(args)), 4)
+            self.assertEqual(len(sft.checkpoints(args)), 4)
             self.assertTrue((latest[1] / "scheduler.pt").exists())
+            # A short run must stop and publish a final checkpoint before save_steps=8.
+            args.run_dir = args.run_dir / "five-step"
+            args.attempt = args.run_dir / "context-32768"
+            args.attempt.mkdir(parents=True)
+            args.max_steps = 5
+            seen.clear()
+            with patch.object(sft, "stopped", return_value=False):
+                sft.train(args)
+            short = sft.checkpoints(args)
+            self.assertEqual([item[0] for item in short], [5])
+            self.assertEqual(short[0][2]["max_steps"], 5)
+            self.assertEqual(short[0][2]["examples_seen"], 10)
+            self.assertEqual(seen, expected_order[:10])
+            self.assertEqual(sft.select_checkpoint(args)["step"], 5)
 
     def test_optimizer_step_checks_finite_loss_gradients_and_changes_weights(self):
         try:
@@ -448,19 +482,19 @@ class OvernightTests(unittest.TestCase):
         model = Tiny()
         optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0)
         with (
-            patch.object(night.pilot, "batch_for", return_value={}),
+            patch.object(sft.pilot, "batch_for", return_value={}),
             patch.object(torch, "autocast", return_value=contextlib.nullcontext()),
         ):
-            loss, norm = night.optimizer_step(model, optimizer, [{}, {}])
+            loss, norm = sft.optimizer_step(model, optimizer, [{}, {}])
             self.assertGreater(norm, 0)
             self.assertTrue(math.isfinite(loss))
             self.assertNotEqual(model.lora_B.item(), 0)
             model.lora_B.data.fill_(1.0)
             with self.assertRaisesRegex(ValueError, "zero adapter gradients"):
-                night.optimizer_step(model, optimizer, [{}, {}])
+                sft.optimizer_step(model, optimizer, [{}, {}])
             model.lora_B.data.fill_(float("nan"))
             with self.assertRaisesRegex(ValueError, "Nonfinite"):
-                night.optimizer_step(model, optimizer, [{}, {}])
+                sft.optimizer_step(model, optimizer, [{}, {}])
 
 
 if __name__ == "__main__":

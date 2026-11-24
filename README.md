@@ -63,7 +63,7 @@ The held-out curve improved throughout the run:
 
 See [pilot evidence](results/pilot_32k.json), [training and validation curves](results/training_curves.csv), and [hardware/runtime versions](results/environment.json). Capacity-probe memory is measured separately from the subsequent training run. Allocated and reserved memory are distinct measurements; reserved memory includes the allocator cache.
 
-### Completed overnight 32K scaling run
+### Historical 32K scaling experiment (November 24, 2026)
 
 The fresh overnight adapter completed **190/200 optimizer steps**, processing **380/400 training examples** and **11,402,036 non-padding tokens** before the training deadline. The full experiment, including final evaluation, finished in **11 hours 40 minutes**, with no worker failures, forced shutdowns, or skipped evaluations. Checkpoint **190** was selected using only the new 32-group validation set (loss **0.964965**) and passed fresh-process reload verification. All 992 adapter tensors changed, and training losses and nonzero gradient norms remained finite.
 
@@ -181,7 +181,7 @@ Run the CPU tests using the installed environment:
 
 ```bash
 TMPDIR="$SMOKE_ROOT/tmp" PYTHONPYCACHEPREFIX="$SMOKE_ROOT/cache/pycache" \
-  "$SMOKE_ROOT/venv/bin/python" -m unittest -v test_pilot test_quality
+  "$SMOKE_ROOT/venv/bin/python" -m unittest -v test_sft test_sft_telemetry test_pilot test_quality
 ```
 
 After continuing training, refresh the committed evidence from your actual run artifacts:
@@ -193,19 +193,32 @@ After continuing training, refresh the committed evidence from your actual run a
 
 The exporter allowlists metrics and omits dataset text, generated responses, absolute paths, and model/checkpoint files. If a final report exists, the JSON snapshot records the completed result; until then, it explicitly records a partial run. Update the README results table to match the new snapshot before publishing another commit.
 
-This is an installation and training feasibility proof of concept with exploratory held-out loss measurements. It does not include an executable terminal-task benchmark. The upstream model, dataset, and framework remain separate projects with their own terms and licenses.
+This is an installation and training feasibility proof of concept with exploratory held-out loss measurements. An executable Terminal-Bench pilot is implemented, but no scored benchmark results have been established yet. The upstream model, dataset, and framework remain separate projects with their own terms and licenses.
 
-## Overnight scaling experiment
+## SFT training, progress, and W&B
 
-The approved 12-hour 32K experiment is available through `./setup.sh --run overnight`. See [OVERNIGHT.md](OVERNIGHT.md) for launch, resume, supervision, artifact, and verification instructions. The existing pilot command is unchanged.
+The reusable training command is `./setup.sh --run sft`. See [SFT.md](SFT.md) for launch, live progress, tracking setup, offline synchronization, and resume instructions. The defaults retain the proven 12-hour 32K experiment configuration. Smoke and pilot commands are unchanged.
 
-To refresh the overnight metrics and PNG/SVG figures from local artifacts:
+Interactive terminals show progress bars; redirected `training.log` output contains step metrics, evaluation/generation counts, heartbeats, checkpoint saves, and an explicit final status. W&B records locally by default and attempts online tracking when `WANDB_API_KEY` is present. Tracking dependencies and network work are isolated from the training environment and watchdog. Metrics and configuration are uploaded; prompts, responses, weights, source code, and raw console logs stay local.
+
+For an existing pilot installation, run `./setup.sh --setup-tracking` once. Use `--wandb-mode disabled` to run without W&B installed. Local/offline tracking has no hosted dashboard until synced; online runs print their URL. Connection failures retain local metrics and allow training to continue.
 
 ```bash
-"$SMOKE_ROOT/venv/bin/python" export_overnight_results.py \
-  --run-dir "$(cat "$SMOKE_ROOT/latest_overnight_run.txt")" --output results
+RUN_DIR=$(cat "$SMOKE_ROOT/latest_sft_run.txt")
+./setup.sh --tracking sync --run-dir "$RUN_DIR"
+"$SMOKE_ROOT/venv/bin/python" export_sft_results.py --run-dir "$RUN_DIR" --output results
 ```
 
-Add `--include-responses` to explicitly refresh the published paired response comparison. Without that flag, the exporter writes metrics and plots only.
+New exports use `sft_*` filenames. `--run overnight` and the old Python entrypoints remain deprecated aliases; the legacy exporter preserves `overnight_*` filenames. Historical published results and response links above retain their original names. Add `--include-responses` only when explicitly refreshing a published response comparison. Plotting uses Matplotlib from the pinned training environment.
 
-Plotting uses Matplotlib from the existing pinned environment. The exporter preserves the earlier smoke and pilot snapshots.
+## Terminal-Bench 2.1 evaluation
+
+The approved five-task base-versus-checkpoint-190 pilot is implemented in
+`terminalbench.py`. Install its isolated environments with `./setup.sh --setup-eval`.
+See [TERMINALBENCH.md](TERMINALBENCH.md) for container calibration, the single-pair
+integration check, the full three-hour command, resume/reporting, and sanitized
+exports. Setup and CPU tests do not launch the comparison or interrupt training.
+Numerical merge/serving differences are advisory and documented for future
+investigation; checkpoint integrity, exact adapter loading, tokenizer agreement,
+and container calibration remain mandatory. The initial pilot was stopped at the
+user's request before model scoring; use a fresh run directory for the manual run.

@@ -1,0 +1,2 @@
+harbor @ git+https://github.com/harbor-framework/harbor.git@39c2219a41b3caa7a689cef1882263b5a93ae93f
+huggingface-hub==1.22.0

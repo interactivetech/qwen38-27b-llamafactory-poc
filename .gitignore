@@ -28,3 +28,14 @@ LLaMA-Factory/
 .DS_Store
 .vscode/
 .idea/
+
+# Isolated SFT tracking environment and SDK working files
+tracking-venv/
+wandb/
+
+# Isolated benchmark environments and local task transcripts
+eval-harbor-venv/
+eval-vllm-venv/
+eval-bin/
+evals/
+*.sif
