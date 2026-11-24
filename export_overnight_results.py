@@ -4,12 +4,13 @@ import argparse
 import csv
 import datetime
 import hashlib
+import re
 from pathlib import Path
 
 from export_results import read, select, write
 
 
-def export(run, output):
+def export(run, output, include_responses=False):
     summary = read(run / "summary.json")
     training = summary["training"]
     identity = read(run / "experiment.json")["identity"]
@@ -113,6 +114,8 @@ def export(run, output):
             writer.writerows(data)
     plot(rows, validation, result, output)
     plot_tokens(rows, output)
+    if include_responses:
+        export_responses(run, output)
     sources = [
         "summary.json",
         "experiment.json",
@@ -341,12 +344,65 @@ def plot_tokens(rows, output):
         plt.close(fig)
 
 
+def export_responses(run, output):
+    """Explicitly publish model outputs, keeping prompt transcripts out of the export."""
+    pairs = read(run / "paired_responses.json")
+    lines = [
+        "# Overnight model response comparison",
+        "",
+        "Exact decoded outputs from the completed 32K overnight experiment. "
+        "Each case uses the same prompt for all three models, greedy decoding, and a 2,048-token output budget.",
+        "",
+        "**Models:** base = original Qwen3.8-27B; pilot = existing 32-step adapter; "
+        "selected = overnight adapter at checkpoint 190.",
+        "",
+        "The first four cases are held-out terminal-task contexts; the last four are controlled instruction probes. "
+        "Full prompt transcripts are omitted. The outputs include the model's emitted reasoning and final response verbatim. "
+        "Generated commands were never executed; schema validity does not establish task correctness.",
+        "",
+    ]
+    for pair in pairs:
+        lines.extend(
+            [
+                f"## {pair['case_id']}",
+                "",
+                f"Case type: {pair['kind']}. "
+                f"Prompt SHA-256: `{pair['prompt_sha256']}`.",
+                "",
+            ]
+        )
+        for variant in ("base", "pilot", "selected"):
+            record = pair["responses"][variant]
+            assert record["prompt_sha256"] == pair["prompt_sha256"]
+            response = record["response"]
+            # A fence longer than any emitted backtick sequence preserves all markup verbatim.
+            fence = "`" * max(
+                3, 1 + max((len(m) for m in re.findall(r"`+", response)), default=0)
+            )
+            checks = (
+                f"Tokens: {record['generated_tokens']}; JSON valid: {record['json_valid']}; "
+                f"schema valid: {record['schema_valid']}; truncated: {record['token_cap_reached']}."
+            )
+            if "diagnostic_pass" in record:
+                checks += f" Instruction probe passed: {record['diagnostic_pass']}."
+            lines.extend(
+                [f"### {variant}", "", checks, "", f"{fence}text", response, fence, ""]
+            )
+    output.mkdir(parents=True, exist_ok=True)
+    (output / "overnight_paired_responses.md").write_text("\n".join(lines) + "\n")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, default=Path("results"))
+    parser.add_argument(
+        "--include-responses",
+        action="store_true",
+        help="Explicitly publish full model outputs as a paired Markdown comparison",
+    )
     args = parser.parse_args()
-    export(args.run_dir, args.output)
+    export(args.run_dir, args.output, include_responses=args.include_responses)
     print(f"Exported overnight metrics and plots to {args.output}")
 
 

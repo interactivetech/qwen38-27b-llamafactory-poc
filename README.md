@@ -85,7 +85,7 @@ The blue training line is a trailing 10-step mean; faint blue shows individual b
 
 Training averaged **60,010.7 non-padding tokens per optimizer step**, or **30,005.4 tokens per example** with two examples accumulated per step. The orange line is the running mean across completed steps; blue shows the trailing 10-step mean and faint blue shows each step. Counts come from differences in the cumulative training-token counter and include prompt and assistant tokens, excluding padding and evaluation. See the [per-step token counts and averages](results/overnight_tokens_per_step.csv) and [vector figure](results/overnight_tokens_per_step.svg).
 
-See [full metrics and uncertainty intervals](results/overnight_32k.json), [training data for the plot](results/overnight_training_curves.csv), [validation data for the plot](results/overnight_validation_curves.csv), and the [vector figure](results/overnight_learning_curves.svg). The committed export excludes prompts, generated responses, absolute paths, and weights; full paired responses remain in the local scratch run.
+See [full metrics and uncertainty intervals](results/overnight_32k.json), [training data for the plot](results/overnight_training_curves.csv), [validation data for the plot](results/overnight_validation_curves.csv), and the [vector figure](results/overnight_learning_curves.svg). The metrics export excludes prompts, generated responses, absolute paths, and weights. [Read the full paired model responses](results/overnight_paired_responses.md) to compare base, pilot, and overnight outputs on all eight cases. This separately published comparison includes exact model outputs with formatting checks; prompt transcripts and weights remain in local scratch storage.
 
 ## Output-quality screen
 
@@ -205,5 +205,7 @@ To refresh the overnight metrics and PNG/SVG figures from local artifacts:
 "$SMOKE_ROOT/venv/bin/python" export_overnight_results.py \
   --run-dir "$(cat "$SMOKE_ROOT/latest_overnight_run.txt")" --output results
 ```
+
+Add `--include-responses` to explicitly refresh the published paired response comparison. Without that flag, the exporter writes metrics and plots only.
 
 Plotting uses Matplotlib from the existing pinned environment. The exporter preserves the earlier smoke and pilot snapshots.
