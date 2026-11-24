@@ -1,0 +1,507 @@
+{
+  "status": "complete",
+  "elapsed_seconds": 42004.26769185066,
+  "training_verified": true,
+  "promising_scaling_result": true,
+  "comparisons": {
+    "test": {
+      "base_to_selected": {
+        "relative_improvement": 0.09389132664088749,
+        "mean_loss_reduction": 0.10130220279097557,
+        "relative_95_interval": [
+          0.08722002998206818,
+          0.10065366515755333
+        ],
+        "loss_reduction_95_interval": [
+          0.0954190045595169,
+          0.10750222578644753
+        ],
+        "paired_tasks": 32,
+        "bootstrap_draws": 4000,
+        "seed": 42
+      },
+      "pilot_to_selected": {
+        "relative_improvement": 0.017667743006435924,
+        "mean_loss_reduction": 0.01758313737809658,
+        "relative_95_interval": [
+          0.01632352422030245,
+          0.01911013226210309
+        ],
+        "loss_reduction_95_interval": [
+          0.016357876360416412,
+          0.018816830590367317
+        ],
+        "paired_tasks": 32,
+        "bootstrap_draws": 4000,
+        "seed": 42
+      },
+      "base_to_pilot": {
+        "relative_improvement": 0.07759450337886131,
+        "mean_loss_reduction": 0.08371906541287899,
+        "relative_95_interval": [
+          0.07188826969446753,
+          0.08335576711489534
+        ],
+        "loss_reduction_95_interval": [
+          0.07877298630774021,
+          0.08901866525411606
+        ],
+        "paired_tasks": 32,
+        "bootstrap_draws": 4000,
+        "seed": 42
+      }
+    },
+    "anchor": {
+      "base_to_selected": {
+        "relative_improvement": 0.09116260372002664,
+        "mean_loss_reduction": 0.09825750812888145,
+        "relative_95_interval": [
+          0.08405074333648649,
+          0.09865518410770681
+        ],
+        "loss_reduction_95_interval": [
+          0.0906899906694889,
+          0.10666406899690628
+        ],
+        "paired_tasks": 16,
+        "bootstrap_draws": 4000,
+        "seed": 42
+      },
+      "pilot_to_selected": {
+        "relative_improvement": 0.016805510851261585,
+        "mean_loss_reduction": 0.016743548214435577,
+        "relative_95_interval": [
+          0.015165266261717837,
+          0.01865906180648065
+        ],
+        "loss_reduction_95_interval": [
+          0.015262696892023087,
+          0.018467552959918976
+        ],
+        "paired_tasks": 16,
+        "bootstrap_draws": 4000,
+        "seed": 42
+      },
+      "base_to_pilot": {
+        "relative_improvement": 0.07562806106973231,
+        "mean_loss_reduction": 0.08151395991444588,
+        "relative_95_interval": [
+          0.06971406623006283,
+          0.08186086285932413
+        ],
+        "loss_reduction_95_interval": [
+          0.07509168982505798,
+          0.08842520415782928
+        ],
+        "paired_tasks": 16,
+        "bootstrap_draws": 4000,
+        "seed": 42
+      }
+    }
+  },
+  "quality": {
+    "base": {
+      "completed": 8,
+      "json_valid": 7,
+      "schema_valid": 7,
+      "truncated": 1,
+      "instruction_pass": 4,
+      "instruction_total": 4
+    },
+    "pilot": {
+      "completed": 8,
+      "json_valid": 8,
+      "schema_valid": 8,
+      "truncated": 0,
+      "instruction_pass": 4,
+      "instruction_total": 4
+    },
+    "selected": {
+      "completed": 8,
+      "json_valid": 8,
+      "schema_valid": 8,
+      "truncated": 0,
+      "instruction_pass": 4,
+      "instruction_total": 4
+    }
+  },
+  "skipped_work": [],
+  "run_id": "overnight-20261124T022453Z",
+  "finished_at": "2026-11-24T14:04:57.935352+00:00",
+  "selected_checkpoint": {
+    "step": 190,
+    "validation_loss": 0.9649645853787661,
+    "selection": "validation loss only"
+  },
+  "latest_checkpoint_step": 190,
+  "configuration": {
+    "revisions": {
+      "model_revision": "37561816e66b5b9153b1b64c10968c18c1e6f4a0",
+      "dataset_revision": "45f1e98e317d3639437f0eb02f4e8bc5825732f3"
+    },
+    "seq_len": 32768,
+    "seed": 42,
+    "train_examples": 400,
+    "val_examples": 32,
+    "test_examples": 32,
+    "hours": 12.0,
+    "hyperparameters": {
+      "lora_rank": 8,
+      "lora_alpha": 16,
+      "lora_dropout": 0,
+      "bf16": true,
+      "attention": "sdpa",
+      "gradient_checkpointing": true,
+      "microbatch": 1,
+      "accumulation": 2,
+      "optimizer": "AdamW",
+      "weight_decay": 0,
+      "max_grad_norm": 1,
+      "learning_rate": 0.0001,
+      "scheduler": "constant",
+      "max_steps": 200,
+      "save_steps": 8,
+      "eval_steps": 16,
+      "save_total_limit": null
+    },
+    "dependency_lock_sha256": "ddc582acec6b32d539dda135ca6010d9029751594e2c0c80157f691b1e33fe63"
+  },
+  "training": {
+    "global_step": 190,
+    "max_steps": 200,
+    "examples_seen": 380,
+    "non_padding_tokens": 11402036,
+    "supervised_tokens": 4161330,
+    "verified_updates": true,
+    "changed_adapter_tensors": 992,
+    "complete": true,
+    "budget_limited": true,
+    "memory": {
+      "allocated_bytes": 55664424960,
+      "reserved_bytes": 55855546368,
+      "peak_allocated_bytes": 192810978816,
+      "peak_reserved_bytes": 286338842624
+    }
+  },
+  "losses": {
+    "base": {
+      "test": {
+        "complete": true,
+        "loss": 1.0789303593337536,
+        "examples": 32,
+        "aggregation": "mean per-example assistant-token cross entropy",
+        "per_example_losses": [
+          1.018627643585205,
+          1.009499430656433,
+          1.208298683166504,
+          1.1282202005386353,
+          1.0902284383773804,
+          1.1052709817886353,
+          0.9033045768737793,
+          1.0587648153305054,
+          1.247693419456482,
+          1.0580203533172607,
+          1.035480260848999,
+          1.1601760387420654,
+          0.9794073104858398,
+          0.8436964750289917,
+          1.1444945335388184,
+          0.7542948126792908,
+          1.1640516519546509,
+          1.0418802499771118,
+          1.1550922393798828,
+          1.2219374179840088,
+          1.011826992034912,
+          1.276299238204956,
+          1.2081429958343506,
+          0.9852529168128967,
+          1.1673835515975952,
+          1.081337332725525,
+          1.2676963806152344,
+          0.9239223003387451,
+          0.8620163202285767,
+          1.192516803741455,
+          1.164842128753662,
+          1.056095004081726
+        ]
+      },
+      "anchor": {
+        "complete": true,
+        "loss": 1.0778269171714783,
+        "examples": 16,
+        "aggregation": "mean per-example assistant-token cross entropy",
+        "per_example_losses": [
+          1.103537917137146,
+          1.0681135654449463,
+          1.199849009513855,
+          1.134352445602417,
+          1.1351337432861328,
+          1.0774040222167969,
+          1.1370742321014404,
+          0.9609376192092896,
+          0.9185526371002197,
+          1.025808572769165,
+          1.0605714321136475,
+          0.9957873225212097,
+          1.0825862884521484,
+          0.9445306658744812,
+          1.146456241607666,
+          1.2545349597930908
+        ]
+      }
+    },
+    "pilot": {
+      "test": {
+        "complete": true,
+        "loss": 0.9952112939208746,
+        "examples": 32,
+        "aggregation": "mean per-example assistant-token cross entropy",
+        "per_example_losses": [
+          0.924675703048706,
+          0.935570240020752,
+          1.1127870082855225,
+          1.0363409519195557,
+          1.0110269784927368,
+          1.0007530450820923,
+          0.8285708427429199,
+          0.9429779052734375,
+          1.1885265111923218,
+          0.9699333906173706,
+          0.959255576133728,
+          1.066110610961914,
+          0.8972899913787842,
+          0.7661146521568298,
+          1.063171148300171,
+          0.6907249093055725,
+          1.0963096618652344,
+          0.931870698928833,
+          1.0960440635681152,
+          1.1372313499450684,
+          0.921674907207489,
+          1.204172968864441,
+          1.137006402015686,
+          0.9017701745033264,
+          1.0943983793258667,
+          0.9686017632484436,
+          1.1876158714294434,
+          0.8382412791252136,
+          0.784509003162384,
+          1.1236804723739624,
+          1.0731719732284546,
+          0.9566329717636108
+        ]
+      },
+      "anchor": {
+        "complete": true,
+        "loss": 0.9963129572570324,
+        "examples": 16,
+        "aggregation": "mean per-example assistant-token cross entropy",
+        "per_example_losses": [
+          0.9913315176963806,
+          0.9728596806526184,
+          1.1066844463348389,
+          1.0736558437347412,
+          1.0632319450378418,
+          0.9845837950706482,
+          1.050708293914795,
+          0.8819289803504944,
+          0.8605575561523438,
+          0.9522915482521057,
+          0.9802841544151306,
+          0.912630021572113,
+          1.0084294080734253,
+          0.8727366924285889,
+          1.0466686487197876,
+          1.182424783706665
+        ]
+      }
+    },
+    "selected": {
+      "validation": {
+        "complete": true,
+        "loss": 0.9649645853787661,
+        "examples": 32,
+        "aggregation": "mean per-example assistant-token cross entropy",
+        "per_example_losses": [
+          0.8871958255767822,
+          1.1391552686691284,
+          0.9338054656982422,
+          0.8027318716049194,
+          0.8223302364349365,
+          0.8196483850479126,
+          1.139843463897705,
+          0.8872168660163879,
+          1.0392003059387207,
+          0.8925543427467346,
+          1.0442513227462769,
+          0.9354719519615173,
+          1.233198642730713,
+          0.9748632311820984,
+          1.0142253637313843,
+          1.0514781475067139,
+          0.9198148846626282,
+          0.9525051712989807,
+          0.8743975162506104,
+          0.9843609929084778,
+          1.1416691541671753,
+          0.9188026189804077,
+          0.8324661254882812,
+          0.9397960305213928,
+          0.571205198764801,
+          0.9631447196006775,
+          1.0039212703704834,
+          0.9047394394874573,
+          1.1548439264297485,
+          1.017999529838562,
+          0.9864144325256348,
+          1.095615029335022
+        ]
+      },
+      "test": {
+        "complete": true,
+        "loss": 0.977628156542778,
+        "examples": 32,
+        "aggregation": "mean per-example assistant-token cross entropy",
+        "per_example_losses": [
+          0.90751713514328,
+          0.9191737174987793,
+          1.0929888486862183,
+          1.0153179168701172,
+          0.9953871369361877,
+          0.9831535220146179,
+          0.8119844794273376,
+          0.9219591021537781,
+          1.1753642559051514,
+          0.94717937707901,
+          0.9455289840698242,
+          1.0509107112884521,
+          0.8795785307884216,
+          0.751224935054779,
+          1.048831820487976,
+          0.6795399188995361,
+          1.0804804563522339,
+          0.9069995880126953,
+          1.0803357362747192,
+          1.1214174032211304,
+          0.8990961909294128,
+          1.1854772567749023,
+          1.116782546043396,
+          0.8876115679740906,
+          1.0794075727462769,
+          0.94539874792099,
+          1.1706249713897705,
+          0.8140304088592529,
+          0.772182822227478,
+          1.1088265180587769,
+          1.0524535179138184,
+          0.9373353123664856
+        ]
+      },
+      "anchor": {
+        "complete": true,
+        "loss": 0.9795694090425968,
+        "examples": 16,
+        "aggregation": "mean per-example assistant-token cross entropy",
+        "per_example_losses": [
+          0.9658198356628418,
+          0.951804518699646,
+          1.0893898010253906,
+          1.0607647895812988,
+          1.046571135520935,
+          0.9644917845726013,
+          1.0330573320388794,
+          0.8678365349769592,
+          0.845270037651062,
+          0.9382771849632263,
+          0.9612818956375122,
+          0.8989363312721252,
+          0.9948707818984985,
+          0.8559226393699646,
+          1.0308480262756348,
+          1.1679679155349731
+        ]
+      }
+    }
+  },
+  "phases": [
+    {
+      "phase": "preflight",
+      "exit_code": 0,
+      "seconds": 8.00258207321167,
+      "shutdown_reason": null,
+      "forced": false
+    },
+    {
+      "phase": "prepare",
+      "exit_code": 0,
+      "seconds": 381.0738356113434,
+      "shutdown_reason": null,
+      "forced": false
+    },
+    {
+      "phase": "probe",
+      "exit_code": 0,
+      "seconds": 240.04609560966492,
+      "shutdown_reason": null,
+      "forced": false
+    },
+    {
+      "phase": "train",
+      "exit_code": 0,
+      "seconds": 37238.27030682564,
+      "shutdown_reason": "training deadline",
+      "forced": false
+    },
+    {
+      "phase": "validate",
+      "exit_code": 0,
+      "seconds": 340.0714433193207,
+      "shutdown_reason": null,
+      "forced": false
+    },
+    {
+      "phase": "loss-base",
+      "exit_code": 0,
+      "seconds": 420.086665391922,
+      "shutdown_reason": null,
+      "forced": false
+    },
+    {
+      "phase": "loss-pilot",
+      "exit_code": 0,
+      "seconds": 452.0916905403137,
+      "shutdown_reason": null,
+      "forced": false
+    },
+    {
+      "phase": "loss-selected",
+      "exit_code": 0,
+      "seconds": 739.1476993560791,
+      "shutdown_reason": null,
+      "forced": false
+    },
+    {
+      "phase": "generate-base",
+      "exit_code": 0,
+      "seconds": 501.1046280860901,
+      "shutdown_reason": null,
+      "forced": false
+    },
+    {
+      "phase": "generate-pilot",
+      "exit_code": 0,
+      "seconds": 758.1541240215302,
+      "shutdown_reason": null,
+      "forced": false
+    },
+    {
+      "phase": "generate-selected",
+      "exit_code": 0,
+      "seconds": 925.1878278255463,
+      "shutdown_reason": null,
+      "forced": false
+    }
+  ],
+  "limitations": "Loss and eight static generations do not establish task success; commands were not executed. Bootstrap is over task groups, not training seeds.",
+  "failures": 0
+}

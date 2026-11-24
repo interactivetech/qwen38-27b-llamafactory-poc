@@ -1,0 +1,12 @@
+{
+  "exported_at": "2026-11-24T14:38:05.383317+00:00",
+  "run_id": "overnight-20261124T022453Z",
+  "source_sha256": {
+    "summary.json": "17ffdaba9198388b6a21a0f590c7e5dd050896412d3d6c7bbd3e82046b8d2e19",
+    "experiment.json": "547f7a139a7d6ae722834e7dd0cf12f91c548d214a588ac9b25e1823d54b2a63",
+    "training_curves.csv": "fc2a5fd3935b15c96bee80f57fba6e7f79228d2aaefdbd29fee8c4a3dc73b064",
+    "validation_curves.csv": "aac063db30e3b3a7b7c2267dc5480d91ed5bf32d532f0ce64527d3df699e9f33"
+  },
+  "description": "Allowlisted metrics and plots; no prompts, responses, model weights, checkpoint paths, or absolute paths.",
+  "plotting": "matplotlib; raw per-step loss, trailing 10-step mean, validation checkpoints, pre-clipping adapter gradient L2 norm"
+}

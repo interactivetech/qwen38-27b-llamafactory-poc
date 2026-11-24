@@ -563,6 +563,10 @@ def all_commands(args):
 
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "overnight":
+        from overnight import main as overnight_main
+
+        return overnight_main(sys.argv[2:])
     if len(sys.argv) > 1 and sys.argv[1] == "quality":
         from quality_test import main as quality_main
 
@@ -610,4 +614,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

@@ -4,9 +4,11 @@ A reproducible, single-GPU [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Fact
 
 **Measured on one NVIDIA B300:** the 2K smoke test passed training, adapter saving, and fresh-process reload. A 32K forward/backward/optimizer capacity probe also passed. The 32K learning pilot completed **32 optimizer steps / one epoch** and passed fresh-process adapter verification. Reloaded held-out loss decreased by **7.56%**. A follow-up output screen produced complete structured responses on **4/4** contexts for the adapter versus **1/4** for the base; actual task success remains unmeasured.
 
+The overnight scaling run subsequently passed training and reload verification at **190 steps**, reducing new test loss by **9.39% versus base** and **1.77% versus the pilot**.
+
 ## Results
 
-Recorded November 23, 2026. Small machine-readable evidence is committed under [`results/`](results/); weights, checkpoints, and dataset text are not included.
+Recorded November 23–24, 2026. Small machine-readable evidence is committed under [`results/`](results/); weights, checkpoints, and dataset text are not included.
 
 ### Completed 2K smoke test
 
@@ -60,6 +62,26 @@ The held-out curve improved throughout the run:
 **Initial generation check:** all four adapter samples reached the 256-new-token cap; three had not closed their reasoning block. The generation check passed operationally, but these capped samples cannot establish command correctness or task completion. The follow-up 2,048-token screen below assesses response completion; task execution remains untested.
 
 See [pilot evidence](results/pilot_32k.json), [training and validation curves](results/training_curves.csv), and [hardware/runtime versions](results/environment.json). Capacity-probe memory is measured separately from the subsequent training run. Allocated and reserved memory are distinct measurements; reserved memory includes the allocator cache.
+
+### Completed overnight 32K scaling run
+
+The fresh overnight adapter completed **190/200 optimizer steps**, processing **380/400 training examples** and **11,402,036 non-padding tokens** before the training deadline. The full experiment, including final evaluation, finished in **11 hours 40 minutes**, with no worker failures, forced shutdowns, or skipped evaluations. Checkpoint **190** was selected using only the new 32-group validation set (loss **0.964965**) and passed fresh-process reload verification. All 992 adapter tensors changed, and training losses and nonzero gradient norms remained finite.
+
+| Model | New test loss (32 groups) | Original anchor loss (16 groups) |
+| --- | --- | --- |
+| Base | 1.078930 | 1.077827 |
+| Existing pilot | 0.995211 | 0.996313 |
+| Overnight adapter | **0.977628** | **0.979569** |
+
+The overnight adapter reduced test loss by **9.39% versus base** (paired task-bootstrap 95% interval **8.72–10.07%**) and **1.77% versus pilot** (**1.63–1.91%**). Anchor loss decreased by **9.12% versus base** and **1.68% versus pilot**. These intervals resample held-out task groups and do not measure variation across training seeds. This meets the planned promising-scaling threshold; terminal-task success remains unmeasured.
+
+On the four new test contexts plus four controlled instruction probes, both adapters produced **8/8 schema-valid responses**, with **zero truncations** and **4/4 instruction probes passed**. Base produced **7/8 schema-valid responses**, one truncation, and also passed all four instruction probes. Decoding was greedy with 2,048 output tokens per response. Generated commands were not executed.
+
+![Overnight training loss, held-out validation loss, and adapter gradient L2 norm over optimizer steps](results/overnight_learning_curves.png)
+
+The blue training line is a trailing 10-step mean; faint blue shows individual batches. Orange shows validation on the same 32 held-out groups at each completed evaluation. Training batches contain different tasks at each step, so their fluctuations are not a fixed-set quality estimate. The lower panel reports the total adapter gradient L2 norm **before** clipping (threshold 1.0). The dashed line marks the selected final checkpoint, step 190.
+
+See [full metrics and uncertainty intervals](results/overnight_32k.json), [training data for the plot](results/overnight_training_curves.csv), [validation data for the plot](results/overnight_validation_curves.csv), and the [vector figure](results/overnight_learning_curves.svg). The committed export excludes prompts, generated responses, absolute paths, and weights; full paired responses remain in the local scratch run.
 
 ## Output-quality screen
 
@@ -168,3 +190,16 @@ After continuing training, refresh the committed evidence from your actual run a
 The exporter allowlists metrics and omits dataset text, generated responses, absolute paths, and model/checkpoint files. If a final report exists, the JSON snapshot records the completed result; until then, it explicitly records a partial run. Update the README results table to match the new snapshot before publishing another commit.
 
 This is an installation and training feasibility proof of concept with exploratory held-out loss measurements. It does not include an executable terminal-task benchmark. The upstream model, dataset, and framework remain separate projects with their own terms and licenses.
+
+## Overnight scaling experiment
+
+The approved 12-hour 32K experiment is available through `./setup.sh --run overnight`. See [OVERNIGHT.md](OVERNIGHT.md) for launch, resume, supervision, artifact, and verification instructions. The existing pilot command is unchanged.
+
+To refresh the overnight metrics and PNG/SVG figures from local artifacts:
+
+```bash
+"$SMOKE_ROOT/venv/bin/python" export_overnight_results.py \
+  --run-dir "$(cat "$SMOKE_ROOT/latest_overnight_run.txt")" --output results
+```
+
+Plotting uses Matplotlib from the existing pinned environment. The exporter preserves the earlier smoke and pilot snapshots.
